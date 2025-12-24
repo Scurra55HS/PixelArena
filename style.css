@@ -72,6 +72,7 @@ body {
 }
 
 /* ===== RANKING ===== */
+
 .ranking {
     margin-top: 18px;
     background: rgba(0, 0, 0, 0.5);
@@ -104,6 +105,27 @@ body {
 .ranking li span {
     opacity: 0.7;
 }
+/* Ranking interno */
+.ranking li {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.rank-nome {
+    color: #4caf50;
+}
+
+.rank-pontos {
+    color: #ffd700;
+}
+
+.rank-data {
+    font-size: 8px;
+    opacity: 0.6;
+}
+
 
 
 
@@ -120,6 +142,7 @@ body {
 
 /* Controles */
 .controles {
+    margin-top: 20px;
     text-align: center;
     font-size: 9px;
     opacity: 0.7;

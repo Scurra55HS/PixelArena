@@ -233,11 +233,24 @@ function atualizarDificuldade() {
 
 // ===== RANKING LOCAL =====
 function salvarRanking() {
+    let nome = prompt("🏆 Novo recorde! Qual seu nome?");
+    if (!nome) nome = "Jogador Anônimo";
+
     const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-    ranking.push({ pontos, data: new Date().toLocaleString() });
+
+    ranking.push({
+        nome,
+        pontos,
+        data: new Date().toLocaleDateString("pt-BR")
+    });
+
     ranking.sort((a, b) => b.pontos - a.pontos);
+
     localStorage.setItem("ranking", JSON.stringify(ranking.slice(0, 5)));
+
+    mostrarRanking();
 }
+
 
 // ===== LOOP INIMIGO =====
 function iniciarInimigo() {
@@ -315,18 +328,16 @@ function mostrarRanking() {
     ranking.forEach(item => {
         const li = document.createElement("li");
 
-        const pontosSpan = document.createElement("strong");
-        pontosSpan.textContent = `${item.pontos} pts`;
-
-        const dataSpan = document.createElement("span");
-        dataSpan.textContent = item.data;
-
-        li.appendChild(pontosSpan);
-        li.appendChild(dataSpan);
+        li.innerHTML = `
+            <span class="rank-nome">${item.nome}</span>
+            <span class="rank-pontos">${item.pontos} pts</span>
+            <span class="rank-data">${item.data}</span>
+        `;
 
         lista.appendChild(li);
     });
 }
+
 
 
 
