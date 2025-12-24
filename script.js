@@ -21,6 +21,44 @@ let intervaloInimigo;
 let podeDash = true;
 let powerUp = null;
 
+
+// menu | jogando | pausado
+const overlay = document.getElementById("overlay");
+const overlayTitulo = document.getElementById("overlayTitulo");
+const overlayTexto = document.getElementById("overlayTexto");
+
+let estadoJogo = "menu";
+
+
+function mostrarMenu() {
+    estadoJogo = "menu";
+    overlay.classList.add("ativo");
+    overlayTitulo.textContent = "Pixel Arena";
+    overlayTexto.textContent = "Pressione ENTER para começar";
+}
+
+function iniciarJogo() {
+    estadoJogo = "jogando";
+    overlay.classList.remove("ativo");
+    resetarJogo();
+}
+
+function pausarJogo() {
+    estadoJogo = "pausado";
+    overlay.classList.add("ativo");
+    overlayTitulo.textContent = "⏸️ Pausado";
+    overlayTexto.textContent = "Pressione ENTER para continuar";
+    clearInterval(intervaloInimigo);
+}
+
+function continuarJogo() {
+    estadoJogo = "jogando";
+    overlay.classList.remove("ativo");
+    iniciarInimigo();
+}
+
+
+
 // ===== SONS =====
 function tocarSom(tipo) {
     const som = document.getElementById(`som-${tipo}`);
@@ -223,6 +261,15 @@ function resetarJogo() {
 // ===== CONTROLES =====
 document.addEventListener("keydown", (e) => {
     let moveu = false;
+
+    if (e.key === "Enter") {
+        if (estadoJogo === "menu") iniciarJogo();
+        else if (estadoJogo === "pausado") continuarJogo();
+        else if (estadoJogo === "jogando") pausarJogo();
+        return;
+    }
+
+    if (estadoJogo !== "jogando") return;
 
     if (e.shiftKey) {
         if (e.key === "ArrowUp") dash(0, -1);
