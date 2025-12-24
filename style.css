@@ -71,24 +71,40 @@ body {
     background: #4caf50;
 }
 
-/* Ranking */
+/* ===== RANKING ===== */
 .ranking {
-    margin-top: 15px;
-    font-size: 10px;
+    margin-top: 18px;
+    background: rgba(0, 0, 0, 0.5);
+    border: 2px solid #333;
+    border-radius: 10px;
+    padding: 12px;
 }
 
 .ranking h2 {
-    font-size: 12px;
-    margin-bottom: 8px;
+    font-size: 11px;
+    margin-bottom: 10px;
+    text-align: center;
+    color: #ffd700;
 }
 
 .ranking ol {
-    padding-left: 20px;
+    list-style-position: inside;
 }
 
 .ranking li {
-    margin-bottom: 4px;
+    font-size: 9px;
+    margin-bottom: 6px;
+    padding: 4px 6px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
 }
+
+.ranking li span {
+    opacity: 0.7;
+}
+
 
 
 /* Power-up */

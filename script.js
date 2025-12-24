@@ -267,10 +267,20 @@ function mostrarRanking() {
 
     ranking.forEach(item => {
         const li = document.createElement("li");
-        li.textContent = `${item.pontos} pts — ${item.data}`;
+
+        const pontosSpan = document.createElement("strong");
+        pontosSpan.textContent = `${item.pontos} pts`;
+
+        const dataSpan = document.createElement("span");
+        dataSpan.textContent = item.data;
+
+        li.appendChild(pontosSpan);
+        li.appendChild(dataSpan);
+
         lista.appendChild(li);
     });
 }
+
 
 
 // ===== INICIAR =====
