@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <title>Pixel Arena</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
 
     <div class="game">
@@ -22,6 +24,13 @@
             <div id="arena">
                 <!-- grid do jogo -->
             </div>
+
+            <!-- Ranking -->
+
+            <section class="ranking">
+                <h2>🏆 Ranking</h2>
+                <ol id="listaRanking"></ol>
+            </section>
         </main>
 
         <footer class="controles">
@@ -30,6 +39,11 @@
 
     </div>
 
+    <audio id="som-dash" src="sounds/dash.mp3"></audio>
+    <audio id="som-hit" src="sounds/hit.mp3"></audio>
+    <audio id="som-powerup" src="sounds/powerup.mp3"></audio>
+
     <script src="script.js"></script>
 </body>
+
 </html>

@@ -1,12 +1,12 @@
 // ===== CONFIGURAÇÕES =====
 const TAMANHO_ARENA = 10;
 const VIDA_INICIAL = 3;
+const COOLDOWN_DASH = 2000;
 
 // ===== ELEMENTOS =====
 const arena = document.getElementById("arena");
 const vidaEl = document.getElementById("vida");
 const pontosEl = document.getElementById("pontos");
-const COOLDOWN_DASH = 2000;
 
 // ===== ESTADO =====
 let playerPos = { x: 0, y: 0 };
@@ -14,12 +14,23 @@ let enemyPos = { x: 5, y: 5 };
 let vida = VIDA_INICIAL;
 let pontos = 0;
 let cells = [];
+
 let velocidadeInimigo = 800;
 let intervaloInimigo;
+
 let podeDash = true;
+let powerUp = null;
 
+// ===== SONS =====
+function tocarSom(tipo) {
+    const som = document.getElementById(`som-${tipo}`);
+    if (som) {
+        som.currentTime = 0;
+        som.play();
+    }
+}
 
-// ===== CRIAR ARENA =====
+// ===== ARENA =====
 function criarArena() {
     arena.innerHTML = "";
     cells = [];
@@ -44,51 +55,120 @@ function desenharTudo() {
 
     cells[playerIndex].classList.add("player");
     cells[enemyIndex].classList.add("enemy");
+
+    if (powerUp) {
+        const powerIndex = powerUp.y * TAMANHO_ARENA + powerUp.x;
+        cells[powerIndex].classList.add("powerup");
+    }
 }
 
 function limparClasses() {
-    cells.forEach(c => c.classList.remove("player", "enemy"));
+    cells.forEach(c => c.classList.remove("player", "enemy", "powerup"));
 }
 
 // ===== INIMIGO =====
 function gerarInimigo() {
-    do {
-        enemyPos.x = Math.floor(Math.random() * TAMANHO_ARENA);
-        enemyPos.y = Math.floor(Math.random() * TAMANHO_ARENA);
-    } while (
-        Math.abs(enemyPos.x - playerPos.x) +
-        Math.abs(enemyPos.y - playerPos.y) < 3
-    );
+    enemyPos.x = Math.floor(Math.random() * TAMANHO_ARENA);
+    enemyPos.y = Math.floor(Math.random() * TAMANHO_ARENA);
 }
 
-
 function moverInimigo() {
-    const dx = playerPos.x - enemyPos.x;
-    const dy = playerPos.y - enemyPos.y;
+    let dx = playerPos.x - enemyPos.x;
+    let dy = playerPos.y - enemyPos.y;
 
-    if (Math.abs(dx) > Math.abs(dy)) {
-        enemyPos.x += Math.sign(dx);
+    let moveX = dx !== 0 ? dx / Math.abs(dx) : 0;
+    let moveY = dy !== 0 ? dy / Math.abs(dy) : 0;
+
+    // Chance de erro pra não ficar perfeito demais
+    const erro = Math.random();
+
+    if (erro < 0.2) {
+        // movimento aleatório (20%)
+        const direcoes = [
+            { x: 0, y: -1 },
+            { x: 0, y: 1 },
+            { x: -1, y: 0 },
+            { x: 1, y: 0 }
+        ];
+        const dir = direcoes[Math.floor(Math.random() * direcoes.length)];
+        moveX = dir.x;
+        moveY = dir.y;
     } else {
-        enemyPos.y += Math.sign(dy);
+        // prioriza eixo maior
+        if (Math.abs(dx) > Math.abs(dy)) {
+            moveY = 0;
+        } else {
+            moveX = 0;
+        }
     }
+
+    const novoX = enemyPos.x + moveX;
+    const novoY = enemyPos.y + moveY;
+
+    if (novoX >= 0 && novoX < TAMANHO_ARENA) enemyPos.x = novoX;
+    if (novoY >= 0 && novoY < TAMANHO_ARENA) enemyPos.y = novoY;
 
     checarColisao();
     desenharTudo();
 }
 
 
+// ===== DASH =====
+function dash(dx, dy) {
+    if (!podeDash) return;
+
+    const novoX = playerPos.x + dx * 2;
+    const novoY = playerPos.y + dy * 2;
+
+    if (novoX >= 0 && novoX < TAMANHO_ARENA) playerPos.x = novoX;
+    if (novoY >= 0 && novoY < TAMANHO_ARENA) playerPos.y = novoY;
+
+    podeDash = false;
+    setTimeout(() => podeDash = true, COOLDOWN_DASH);
+
+    tocarSom("dash");
+}
+
+// ===== POWER-UP =====
+function gerarPowerUp() {
+    const tipos = ["vida", "pontos", "slow"];
+    powerUp = {
+        tipo: tipos[Math.floor(Math.random() * tipos.length)],
+        x: Math.floor(Math.random() * TAMANHO_ARENA),
+        y: Math.floor(Math.random() * TAMANHO_ARENA)
+    };
+}
+
+function checarPowerUp() {
+    if (
+        powerUp &&
+        playerPos.x === powerUp.x &&
+        playerPos.y === powerUp.y
+    ) {
+        if (powerUp.tipo === "vida") vida++;
+        if (powerUp.tipo === "pontos") pontos += 5;
+        if (powerUp.tipo === "slow") {
+            velocidadeInimigo += 200;
+            iniciarInimigo();
+        }
+
+        tocarSom("powerup");
+        powerUp = null;
+    }
+}
+
 // ===== COLISÃO =====
 function checarColisao() {
     if (playerPos.x === enemyPos.x && playerPos.y === enemyPos.y) {
         vida--;
+        tocarSom("hit");
         atualizarHUD();
-
-        alert("💥 Você foi atingido!");
 
         playerPos = { x: 0, y: 0 };
         gerarInimigo();
 
         if (vida <= 0) {
+            salvarRanking();
             alert("☠️ Game Over!");
             resetarJogo();
         }
@@ -107,6 +187,18 @@ function atualizarDificuldade() {
         velocidadeInimigo -= 100;
         iniciarInimigo();
     }
+
+    if (pontos % 7 === 0 && !powerUp) {
+        gerarPowerUp();
+    }
+}
+
+// ===== RANKING LOCAL =====
+function salvarRanking() {
+    const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+    ranking.push({ pontos, data: new Date().toLocaleString() });
+    ranking.sort((a, b) => b.pontos - a.pontos);
+    localStorage.setItem("ranking", JSON.stringify(ranking.slice(0, 5)));
 }
 
 // ===== LOOP INIMIGO =====
@@ -121,15 +213,25 @@ function resetarJogo() {
     pontos = 0;
     velocidadeInimigo = 800;
     playerPos = { x: 0, y: 0 };
+    powerUp = null;
     gerarInimigo();
     atualizarHUD();
     iniciarInimigo();
     desenharTudo();
 }
 
-// ===== MOVIMENTAÇÃO PLAYER =====
+// ===== CONTROLES =====
 document.addEventListener("keydown", (e) => {
     let moveu = false;
+
+    if (e.shiftKey) {
+        if (e.key === "ArrowUp") dash(0, -1);
+        if (e.key === "ArrowDown") dash(0, 1);
+        if (e.key === "ArrowLeft") dash(-1, 0);
+        if (e.key === "ArrowRight") dash(1, 0);
+        desenharTudo();
+        return;
+    }
 
     switch (e.key) {
         case "ArrowUp":
@@ -149,38 +251,31 @@ document.addEventListener("keydown", (e) => {
     if (moveu) {
         pontos++;
         atualizarDificuldade();
+        checarPowerUp();
         checarColisao();
         desenharTudo();
         atualizarHUD();
     }
 });
 
-// ===== PODERES =====
-function dash(dx, dy) {
-    if (!podeDash) return;
+function mostrarRanking() {
+    const lista = document.getElementById("listaRanking");
+    if (!lista) return;
 
-    const novoX = playerPos.x + dx * 2;
-    const novoY = playerPos.y + dy * 2;
+    const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
+    lista.innerHTML = "";
 
-    if (novoX >= 0 && novoX < TAMANHO_ARENA) playerPos.x = novoX;
-    if (novoY >= 0 && novoY < TAMANHO_ARENA) playerPos.y = novoY;
-
-    podeDash = false;
-    setTimeout(() => podeDash = true, COOLDOWN_DASH);
-
-    tocarSom("dash");
+    ranking.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.pontos} pts — ${item.data}`;
+        lista.appendChild(li);
+    });
 }
-
-if (e.shiftKey) {
-    if (e.key === "ArrowUp") dash(0, -1);
-    if (e.key === "ArrowDown") dash(0, 1);
-    if (e.key === "ArrowLeft") dash(-1, 0);
-    if (e.key === "ArrowRight") dash(1, 0);
-}
-
 
 
 // ===== INICIAR =====
 gerarInimigo();
 criarArena();
 iniciarInimigo();
+salvarRanking();
+mostrarRanking();

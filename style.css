@@ -71,6 +71,32 @@ body {
     background: #4caf50;
 }
 
+/* Ranking */
+.ranking {
+    margin-top: 15px;
+    font-size: 10px;
+}
+
+.ranking h2 {
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+
+.ranking ol {
+    padding-left: 20px;
+}
+
+.ranking li {
+    margin-bottom: 4px;
+}
+
+
+/* Power-up */
+.powerup {
+    background: #ffd700;
+    box-shadow: 0 0 8px #ffd700;
+}
+
 /* Inimigo */
 .enemy {
     background: #f44336;
