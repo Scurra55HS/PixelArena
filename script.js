@@ -49,9 +49,15 @@ function limparClasses() {
 
 // ===== INIMIGO =====
 function gerarInimigo() {
-    enemyPos.x = Math.floor(Math.random() * TAMANHO_ARENA);
-    enemyPos.y = Math.floor(Math.random() * TAMANHO_ARENA);
+    do {
+        enemyPos.x = Math.floor(Math.random() * TAMANHO_ARENA);
+        enemyPos.y = Math.floor(Math.random() * TAMANHO_ARENA);
+    } while (
+        Math.abs(enemyPos.x - playerPos.x) +
+        Math.abs(enemyPos.y - playerPos.y) < 3
+    );
 }
+
 
 function moverInimigo() {
     const dx = playerPos.x - enemyPos.x;
