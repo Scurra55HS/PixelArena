@@ -6,6 +6,7 @@ const VIDA_INICIAL = 3;
 const arena = document.getElementById("arena");
 const vidaEl = document.getElementById("vida");
 const pontosEl = document.getElementById("pontos");
+const COOLDOWN_DASH = 2000;
 
 // ===== ESTADO =====
 let playerPos = { x: 0, y: 0 };
@@ -15,6 +16,8 @@ let pontos = 0;
 let cells = [];
 let velocidadeInimigo = 800;
 let intervaloInimigo;
+let podeDash = true;
+
 
 // ===== CRIAR ARENA =====
 function criarArena() {
@@ -151,6 +154,31 @@ document.addEventListener("keydown", (e) => {
         atualizarHUD();
     }
 });
+
+// ===== PODERES =====
+function dash(dx, dy) {
+    if (!podeDash) return;
+
+    const novoX = playerPos.x + dx * 2;
+    const novoY = playerPos.y + dy * 2;
+
+    if (novoX >= 0 && novoX < TAMANHO_ARENA) playerPos.x = novoX;
+    if (novoY >= 0 && novoY < TAMANHO_ARENA) playerPos.y = novoY;
+
+    podeDash = false;
+    setTimeout(() => podeDash = true, COOLDOWN_DASH);
+
+    tocarSom("dash");
+}
+
+if (e.shiftKey) {
+    if (e.key === "ArrowUp") dash(0, -1);
+    if (e.key === "ArrowDown") dash(0, 1);
+    if (e.key === "ArrowLeft") dash(-1, 0);
+    if (e.key === "ArrowRight") dash(1, 0);
+}
+
+
 
 // ===== INICIAR =====
 gerarInimigo();
