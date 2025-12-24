@@ -1,349 +1,245 @@
-// ===== CONFIGURAÇÕES =====
+// ================= CONFIG =================
 const TAMANHO_ARENA = 10;
 const VIDA_INICIAL = 3;
-const COOLDOWN_DASH = 2000;
+const DASH_COOLDOWN = 3000;
+const DASH_DIST = 2;
 
-// ===== ELEMENTOS =====
+// ================= ELEMENTOS =================
 const arena = document.getElementById("arena");
 const vidaEl = document.getElementById("vida");
 const pontosEl = document.getElementById("pontos");
+const dashEl = document.getElementById("dashCooldown");
+const rankingEl = document.getElementById("listaRanking");
 
-// ===== ESTADO =====
+// popup
+const popup = document.getElementById("gamePopup");
+const popupTitle = document.getElementById("popupTitle");
+const popupMessage = document.getElementById("popupMessage");
+const popupBtn = document.getElementById("popupBtn");
+
+// ================= ESTADO =================
 let playerPos = { x: 0, y: 0 };
 let enemyPos = { x: 5, y: 5 };
 let vida = VIDA_INICIAL;
 let pontos = 0;
 let cells = [];
-
-let velocidadeInimigo = 800;
+let velocidadeInimigo = 650;
 let intervaloInimigo;
+let pausado = true;
 
+// dash
 let podeDash = true;
-let powerUp = null;
+let dashCooldownRestante = 0;
 
+// ================= POPUP =================
+function mostrarPopup(titulo, mensagem, callback) {
+    pausado = true;
+    popupTitle.textContent = titulo;
+    popupMessage.textContent = mensagem;
+    popup.classList.remove("hidden");
 
-// menu | jogando | pausado
-const overlay = document.getElementById("overlay");
-const overlayTitulo = document.getElementById("overlayTitulo");
-const overlayTexto = document.getElementById("overlayTexto");
-
-let estadoJogo = "menu";
-
-
-function mostrarMenu() {
-    estadoJogo = "menu";
-    overlay.classList.add("ativo");
-    overlayTitulo.textContent = "Pixel Arena";
-    overlayTexto.textContent = "Pressione ENTER para começar";
+    popupBtn.onclick = () => {
+        popup.classList.add("hidden");
+        pausado = false;
+        if (callback) callback();
+    };
 }
 
-function iniciarJogo() {
-    estadoJogo = "jogando";
-    overlay.classList.remove("ativo");
-    resetarJogo();
-}
-
-function pausarJogo() {
-    estadoJogo = "pausado";
-    overlay.classList.add("ativo");
-    overlayTitulo.textContent = "⏸️ Pausado";
-    overlayTexto.textContent = "Pressione ENTER para continuar";
-    clearInterval(intervaloInimigo);
-}
-
-function continuarJogo() {
-    estadoJogo = "jogando";
-    overlay.classList.remove("ativo");
-    iniciarInimigo();
-}
-
-
-
-// ===== SONS =====
-function tocarSom(tipo) {
-    const som = document.getElementById(`som-${tipo}`);
-    if (som) {
-        som.currentTime = 0;
-        som.play();
-    }
-}
-
-// ===== ARENA =====
+// ================= ARENA =================
 function criarArena() {
     arena.innerHTML = "";
     cells = [];
 
     for (let i = 0; i < TAMANHO_ARENA ** 2; i++) {
-        const cell = document.createElement("div");
-        cell.classList.add("cell");
-        arena.appendChild(cell);
-        cells.push(cell);
+        const c = document.createElement("div");
+        c.className = "cell";
+        arena.appendChild(c);
+        cells.push(c);
     }
 
-    atualizarHUD();
     desenharTudo();
+    atualizarHUD();
 }
 
-// ===== DESENHO =====
 function desenharTudo() {
-    limparClasses();
+    cells.forEach(c => c.className = "cell");
 
-    const playerIndex = playerPos.y * TAMANHO_ARENA + playerPos.x;
-    const enemyIndex = enemyPos.y * TAMANHO_ARENA + enemyPos.x;
-
-    cells[playerIndex].classList.add("player");
-    cells[enemyIndex].classList.add("enemy");
-
-    if (powerUp) {
-        const powerIndex = powerUp.y * TAMANHO_ARENA + powerUp.x;
-        cells[powerIndex].classList.add("powerup");
-    }
+    cells[playerPos.y * TAMANHO_ARENA + playerPos.x]?.classList.add("player");
+    cells[enemyPos.y * TAMANHO_ARENA + enemyPos.x]?.classList.add("enemy");
 }
 
-function limparClasses() {
-    cells.forEach(c => c.classList.remove("player", "enemy", "powerup"));
-}
-
-// ===== INIMIGO =====
-function gerarInimigo() {
-    enemyPos.x = Math.floor(Math.random() * TAMANHO_ARENA);
-    enemyPos.y = Math.floor(Math.random() * TAMANHO_ARENA);
-}
-
+// ================= INIMIGO (MENOS BURRO) =================
 function moverInimigo() {
-    let dx = playerPos.x - enemyPos.x;
-    let dy = playerPos.y - enemyPos.y;
+    if (pausado) return;
 
-    let moveX = dx !== 0 ? dx / Math.abs(dx) : 0;
-    let moveY = dy !== 0 ? dy / Math.abs(dy) : 0;
+    const dx = playerPos.x - enemyPos.x;
+    const dy = playerPos.y - enemyPos.y;
 
-    // Chance de erro pra não ficar perfeito demais
-    const erro = Math.random();
-
-    if (erro < 0.2) {
-        // movimento aleatório (20%)
-        const direcoes = [
-            { x: 0, y: -1 },
-            { x: 0, y: 1 },
-            { x: -1, y: 0 },
-            { x: 1, y: 0 }
-        ];
-        const dir = direcoes[Math.floor(Math.random() * direcoes.length)];
-        moveX = dir.x;
-        moveY = dir.y;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        enemyPos.x += Math.sign(dx);
     } else {
-        // prioriza eixo maior
-        if (Math.abs(dx) > Math.abs(dy)) {
-            moveY = 0;
-        } else {
-            moveX = 0;
-        }
+        enemyPos.y += Math.sign(dy);
     }
 
-    const novoX = enemyPos.x + moveX;
-    const novoY = enemyPos.y + moveY;
-
-    if (novoX >= 0 && novoX < TAMANHO_ARENA) enemyPos.x = novoX;
-    if (novoY >= 0 && novoY < TAMANHO_ARENA) enemyPos.y = novoY;
+    enemyPos.x = Math.max(0, Math.min(TAMANHO_ARENA - 1, enemyPos.x));
+    enemyPos.y = Math.max(0, Math.min(TAMANHO_ARENA - 1, enemyPos.y));
 
     checarColisao();
     desenharTudo();
 }
 
-
-// ===== DASH =====
-function dash(dx, dy) {
-    if (!podeDash) return;
-
-    const novoX = playerPos.x + dx * 2;
-    const novoY = playerPos.y + dy * 2;
-
-    if (novoX >= 0 && novoX < TAMANHO_ARENA) playerPos.x = novoX;
-    if (novoY >= 0 && novoY < TAMANHO_ARENA) playerPos.y = novoY;
-
-    podeDash = false;
-    setTimeout(() => podeDash = true, COOLDOWN_DASH);
-
-    tocarSom("dash");
-}
-
-// ===== POWER-UP =====
-function gerarPowerUp() {
-    const tipos = ["vida", "pontos", "slow"];
-    powerUp = {
-        tipo: tipos[Math.floor(Math.random() * tipos.length)],
-        x: Math.floor(Math.random() * TAMANHO_ARENA),
-        y: Math.floor(Math.random() * TAMANHO_ARENA)
-    };
-}
-
-function checarPowerUp() {
-    if (
-        powerUp &&
-        playerPos.x === powerUp.x &&
-        playerPos.y === powerUp.y
-    ) {
-        if (powerUp.tipo === "vida") vida++;
-        if (powerUp.tipo === "pontos") pontos += 5;
-        if (powerUp.tipo === "slow") {
-            velocidadeInimigo += 200;
-            iniciarInimigo();
-        }
-
-        tocarSom("powerup");
-        powerUp = null;
-    }
-}
-
-// ===== COLISÃO =====
-function checarColisao() {
-    if (playerPos.x === enemyPos.x && playerPos.y === enemyPos.y) {
-        vida--;
-        tocarSom("hit");
-        atualizarHUD();
-
-        playerPos = { x: 0, y: 0 };
-        gerarInimigo();
-
-        if (vida <= 0) {
-            salvarRanking();
-            alert("☠️ Game Over!");
-            resetarJogo();
-        }
-    }
-}
-
-// ===== HUD =====
-function atualizarHUD() {
-    vidaEl.textContent = vida;
-    pontosEl.textContent = pontos;
-}
-
-// ===== DIFICULDADE =====
-function atualizarDificuldade() {
-    if (pontos % 10 === 0 && velocidadeInimigo > 200) {
-        velocidadeInimigo -= 100;
-        iniciarInimigo();
-    }
-
-    if (pontos % 7 === 0 && !powerUp) {
-        gerarPowerUp();
-    }
-}
-
-// ===== RANKING LOCAL =====
-function salvarRanking() {
-    let nome = prompt("🏆 Novo recorde! Qual seu nome?");
-    if (!nome) nome = "Jogador Anônimo";
-
-    const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-
-    ranking.push({
-        nome,
-        pontos,
-        data: new Date().toLocaleDateString("pt-BR")
-    });
-
-    ranking.sort((a, b) => b.pontos - a.pontos);
-
-    localStorage.setItem("ranking", JSON.stringify(ranking.slice(0, 5)));
-
-    mostrarRanking();
-}
-
-
-// ===== LOOP INIMIGO =====
 function iniciarInimigo() {
     clearInterval(intervaloInimigo);
     intervaloInimigo = setInterval(moverInimigo, velocidadeInimigo);
 }
 
-// ===== RESET =====
+// ================= COLISÃO =================
+function checarColisao() {
+    if (playerPos.x === enemyPos.x && playerPos.y === enemyPos.y) {
+        vida--;
+        atualizarHUD();
+
+        mostrarPopup("HIT!", "Você foi atingido! 💥");
+
+        playerPos = { x: 0, y: 0 };
+        enemyPos = {
+            x: Math.floor(Math.random() * TAMANHO_ARENA),
+            y: Math.floor(Math.random() * TAMANHO_ARENA)
+        };
+
+        if (vida <= 0) fimDeJogo();
+    }
+}
+
+// ================= HUD =================
+function atualizarHUD() {
+    vidaEl.textContent = vida;
+    pontosEl.textContent = pontos;
+
+    if (podeDash) {
+        dashEl.textContent = "PRONTO";
+        dashEl.style.color = "#4caf50";
+    } else {
+        dashEl.textContent = (dashCooldownRestante / 1000).toFixed(1) + "s";
+        dashEl.style.color = "#f44336";
+    }
+}
+
+// ================= DASH =================
+function usarDash(dx, dy) {
+    if (!podeDash || (!dx && !dy)) return;
+
+    playerPos.x += dx * DASH_DIST;
+    playerPos.y += dy * DASH_DIST;
+
+    playerPos.x = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.x));
+    playerPos.y = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.y));
+
+    podeDash = false;
+    dashCooldownRestante = DASH_COOLDOWN;
+
+    const cd = setInterval(() => {
+        dashCooldownRestante -= 100;
+        atualizarHUD();
+
+        if (dashCooldownRestante <= 0) {
+            podeDash = true;
+            clearInterval(cd);
+            atualizarHUD();
+        }
+    }, 100);
+}
+
+// ================= RANKING LOCAL =================
+function salvarRanking(nome) {
+    const lista = JSON.parse(localStorage.getItem("ranking")) || [];
+
+    lista.push({ nome, pontos });
+    lista.sort((a, b) => b.pontos - a.pontos);
+
+    localStorage.setItem("ranking", JSON.stringify(lista.slice(0, 5)));
+    renderizarRanking();
+}
+
+function renderizarRanking() {
+    rankingEl.innerHTML = "";
+    const lista = JSON.parse(localStorage.getItem("ranking")) || [];
+
+    lista.forEach((r, i) => {
+        const li = document.createElement("li");
+        li.innerHTML = `
+            <span class="rank-nome">#${i + 1} ${r.nome}</span>
+            <span class="rank-pontos">${r.pontos} pts</span>
+        `;
+        rankingEl.appendChild(li);
+    });
+}
+
+// ================= FIM DE JOGO =================
+function fimDeJogo() {
+    clearInterval(intervaloInimigo);
+
+    mostrarPopup(
+        "☠ GAME OVER",
+        `Você fez ${pontos} pontos\nDigite seu nome:`,
+        () => {
+            const nome = prompt("Seu nome:");
+            if (nome) salvarRanking(nome);
+            resetarJogo();
+        }
+    );
+}
+
+// ================= RESET =================
 function resetarJogo() {
     vida = VIDA_INICIAL;
     pontos = 0;
-    velocidadeInimigo = 800;
+    podeDash = true;
     playerPos = { x: 0, y: 0 };
-    powerUp = null;
-    gerarInimigo();
+    enemyPos = { x: 5, y: 5 };
     atualizarHUD();
     iniciarInimigo();
     desenharTudo();
 }
 
-// ===== CONTROLES =====
-document.addEventListener("keydown", (e) => {
-    let moveu = false;
+// ================= CONTROLES =================
+document.addEventListener("keydown", e => {
+    if (pausado) return;
 
-    if (e.key === "Enter") {
-        if (estadoJogo === "menu") iniciarJogo();
-        else if (estadoJogo === "pausado") continuarJogo();
-        else if (estadoJogo === "jogando") pausarJogo();
-        return;
+    let dx = 0, dy = 0;
+
+    if (e.key === "ArrowUp") dy = -1;
+    if (e.key === "ArrowDown") dy = 1;
+    if (e.key === "ArrowLeft") dx = -1;
+    if (e.key === "ArrowRight") dx = 1;
+
+    if (e.shiftKey) usarDash(dx, dy);
+    else {
+        playerPos.x += dx;
+        playerPos.y += dy;
     }
 
-    if (estadoJogo !== "jogando") return;
+    playerPos.x = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.x));
+    playerPos.y = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.y));
 
-    if (e.shiftKey) {
-        if (e.key === "ArrowUp") dash(0, -1);
-        if (e.key === "ArrowDown") dash(0, 1);
-        if (e.key === "ArrowLeft") dash(-1, 0);
-        if (e.key === "ArrowRight") dash(1, 0);
-        desenharTudo();
-        return;
-    }
-
-    switch (e.key) {
-        case "ArrowUp":
-            if (playerPos.y > 0) { playerPos.y--; moveu = true; }
-            break;
-        case "ArrowDown":
-            if (playerPos.y < TAMANHO_ARENA - 1) { playerPos.y++; moveu = true; }
-            break;
-        case "ArrowLeft":
-            if (playerPos.x > 0) { playerPos.x--; moveu = true; }
-            break;
-        case "ArrowRight":
-            if (playerPos.x < TAMANHO_ARENA - 1) { playerPos.x++; moveu = true; }
-            break;
-    }
-
-    if (moveu) {
+    if (dx || dy) {
         pontos++;
-        atualizarDificuldade();
-        checarPowerUp();
-        checarColisao();
         desenharTudo();
+        checarColisao();
         atualizarHUD();
+    }
+
+    if (e.key === "Escape") {
+        mostrarPopup("⏸ PAUSE", "Pressione OK para continuar");
     }
 });
 
-function mostrarRanking() {
-    const lista = document.getElementById("listaRanking");
-    if (!lista) return;
-
-    const ranking = JSON.parse(localStorage.getItem("ranking")) || [];
-    lista.innerHTML = "";
-
-    ranking.forEach(item => {
-        const li = document.createElement("li");
-
-        li.innerHTML = `
-            <span class="rank-nome">${item.nome}</span>
-            <span class="rank-pontos">${item.pontos} pts</span>
-            <span class="rank-data">${item.data}</span>
-        `;
-
-        lista.appendChild(li);
-    });
-}
-
-
-
-
-// ===== INICIAR =====
-gerarInimigo();
+// ================= START =================
 criarArena();
+renderizarRanking();
 iniciarInimigo();
-salvarRanking();
-mostrarRanking();
+
+mostrarPopup(
+    "PIXEL ARENA🎮", 
+    "Setas: mover\n Shift: dash\n Esc: pause\n Boa sorte!"
+);

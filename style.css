@@ -135,6 +135,18 @@ body {
     box-shadow: 0 0 8px #ffd700;
 }
 
+.dash-status {
+    font-size: 8px;
+    margin-top: 6px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+#dashCooldown {
+    color: #4caf50;
+}
+
+
 /* Inimigo */
 .enemy {
     background: #f44336;
@@ -180,6 +192,67 @@ body {
 .overlay-box p {
     font-size: 9px;
     opacity: 0.8;
+}
+
+.popup {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+}
+
+.popup.hidden {
+    display: none;
+}
+
+.popup-box {
+    background: #111;
+    border: 2px solid #4caf50;
+    border-radius: 10px;
+    padding: 20px;
+    width: 500px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+    animation: popupIn 0.3s ease;
+}
+
+.popup-box h2 {
+    margin-bottom: 10px;
+    color: #4caf50;
+}
+
+.popup-box p {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.popup-box button {
+    margin-top: 15px;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 6px;
+    background: #4caf50;
+    color: #000;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.popup-box button:hover {
+    background: #66ff6a;
+}
+
+@keyframes popupIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 /* Mobile */

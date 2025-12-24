@@ -10,14 +10,6 @@
 
 <body>
 
-    <div id="overlay" class="overlay ativo">
-        <div class="overlay-box">
-            <h2 id="overlayTitulo">Pixel Arena</h2>
-            <p id="overlayTexto">Pressione ENTER para começar</p>
-        </div>
-    </div>
-
-
     <div class="game">
 
         <header class="hud">
@@ -25,6 +17,7 @@
             <div class="status">
                 <span>❤️ Vida: <strong id="vida">3</strong></span>
                 <span>⭐ Pontos: <strong id="pontos">0</strong></span>
+                <div class="dash-status"> DASH <span id="dashCooldown">PRONTO</span></div>
             </div>
         </header>
 
@@ -33,7 +26,7 @@
                 <!-- grid do jogo -->
             </div>
 
-            
+
         </main>
         <!-- Ranking -->
 
@@ -46,6 +39,15 @@
             <p>Use as setas do teclado para se mover</p>
         </footer>
 
+    </div>
+
+
+    <div id="gamePopup" class="popup hidden">
+        <div class="popup-box">
+            <h2 id="popupTitle">Título</h2>
+            <p id="popupMessage">Mensagem</p>
+            <button id="popupBtn">OK</button>
+        </div>
     </div>
 
     <audio id="som-dash" src="sounds/dash.mp3"></audio>
