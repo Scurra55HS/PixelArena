@@ -4,6 +4,11 @@ const VIDA_INICIAL = 3;
 const DASH_COOLDOWN = 3000;
 const DASH_DIST = 2;
 
+// ================= SONS =================
+const somDash = document.getElementById("som-dash");
+const somHit = document.getElementById("som-hit");
+const somPower = document.getElementById("som-powerup");
+
 // ================= ELEMENTOS =================
 const arena = document.getElementById("arena");
 const vidaEl = document.getElementById("vida");
@@ -31,6 +36,13 @@ let pausado = true;
 let podeDash = true;
 let dashCooldownRestante = 0;
 
+// power-up
+let powerUpPos = null;
+let powerUpTipo = null;
+let powerUpTimer = null;
+let invencivel = false;
+let velocidadeExtra = 0;
+
 // ================= POPUP =================
 function mostrarPopup(titulo, mensagem, callback) {
     pausado = true;
@@ -57,6 +69,7 @@ function criarArena() {
         cells.push(c);
     }
 
+    spawnPowerUp();
     desenharTudo();
     atualizarHUD();
 }
@@ -66,9 +79,37 @@ function desenharTudo() {
 
     cells[playerPos.y * TAMANHO_ARENA + playerPos.x]?.classList.add("player");
     cells[enemyPos.y * TAMANHO_ARENA + enemyPos.x]?.classList.add("enemy");
+
+    if (powerUpPos && powerUpTipo) {
+        cells[powerUpPos.y * TAMANHO_ARENA + powerUpPos.x]?.classList.add("powerup", powerUpTipo);
+    }
 }
 
-// ================= INIMIGO (MENOS BURRO) =================
+
+// ================= POWER-UP =================
+function spawnPowerUp() {
+    // Remove power-up antigo
+    if (powerUpPos) {
+        cells[powerUpPos.y * TAMANHO_ARENA + powerUpPos.x].classList.remove("powerup");
+    }
+
+    // Escolhe posição aleatória
+    const x = Math.floor(Math.random() * TAMANHO_ARENA);
+    const y = Math.floor(Math.random() * TAMANHO_ARENA);
+
+    // Não spawnar em jogador ou inimigo
+    if ((x === playerPos.x && y === playerPos.y) || (x === enemyPos.x && y === enemyPos.y)) {
+        return spawnPowerUp();
+    }
+
+    powerUpPos = { x, y };
+
+    // Define tipo aleatório
+    const tipos = ["cura", "pontos", "velocidade", "invencivel", "slow"];
+    powerUpTipo = tipos[Math.floor(Math.random() * tipos.length)];
+}
+
+// ================= INIMIGO =================
 function moverInimigo() {
     if (pausado) return;
 
@@ -85,19 +126,27 @@ function moverInimigo() {
     enemyPos.y = Math.max(0, Math.min(TAMANHO_ARENA - 1, enemyPos.y));
 
     checarColisao();
+    checarPowerUp();
     desenharTudo();
 }
 
 function iniciarInimigo() {
     clearInterval(intervaloInimigo);
-    intervaloInimigo = setInterval(moverInimigo, velocidadeInimigo);
+    const vel = Math.max(200, velocidadeInimigo - pontos * 5); // evolui com pontos
+    intervaloInimigo = setInterval(moverInimigo, vel);
 }
 
 // ================= COLISÃO =================
 function checarColisao() {
     if (playerPos.x === enemyPos.x && playerPos.y === enemyPos.y) {
+        if (invencivel) return; // ignora colisão
         vida--;
         atualizarHUD();
+
+        try {
+            somHit.currentTime = 0;
+            somHit.play();
+        } catch { }
 
         mostrarPopup("HIT!", "Você foi atingido! 💥");
 
@@ -108,6 +157,51 @@ function checarColisao() {
         };
 
         if (vida <= 0) fimDeJogo();
+    }
+}
+
+// ================= POWER-UP COLETA =================
+function checarPowerUp() {
+    if (!powerUpPos) return;
+
+    if (playerPos.x === powerUpPos.x && playerPos.y === powerUpPos.y) {
+        try {
+            somPower.currentTime = 0;
+            somPower.play();
+        } catch { }
+
+        switch (powerUpTipo) {
+            case "cura":
+                vida++;
+                mostrarPopup("POWER-UP!", "+1 Vida ❤️");
+                break;
+            case "pontos":
+                pontos += 10;
+                mostrarPopup("POWER-UP!", "+10 Pontos ⭐");
+                break;
+            case "velocidade":
+                velocidadeExtra = 1;
+                mostrarPopup("POWER-UP!", "Velocidade aumentada 🏃");
+                if (powerUpTimer) clearTimeout(powerUpTimer);
+                powerUpTimer = setTimeout(() => { velocidadeExtra = 0; }, 6000);
+                break;
+            case "invencivel":
+                invencivel = true;
+                mostrarPopup("POWER-UP!", "Invencível 🛡");
+                if (powerUpTimer) clearTimeout(powerUpTimer);
+                powerUpTimer = setTimeout(() => { invencivel = false; }, 6000);
+                break;
+            case "slow":
+                clearInterval(intervaloInimigo);
+                mostrarPopup("POWER-UP!", "Inimigo mais lento 🐢");
+                intervaloInimigo = setInterval(moverInimigo, (velocidadeInimigo + 300));
+                powerUpTimer = setTimeout(() => { iniciarInimigo(); }, 6000);
+                break;
+        }
+
+        powerUpPos = null;
+        powerUpTipo = null;
+        spawnPowerUp();
     }
 }
 
@@ -129,8 +223,8 @@ function atualizarHUD() {
 function usarDash(dx, dy) {
     if (!podeDash || (!dx && !dy)) return;
 
-    playerPos.x += dx * DASH_DIST;
-    playerPos.y += dy * DASH_DIST;
+    playerPos.x += dx * DASH_DIST + dx * velocidadeExtra;
+    playerPos.y += dy * DASH_DIST + dy * velocidadeExtra;
 
     playerPos.x = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.x));
     playerPos.y = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.y));
@@ -148,9 +242,14 @@ function usarDash(dx, dy) {
             atualizarHUD();
         }
     }, 100);
+
+    try {
+        somDash.currentTime = 0;
+        somDash.play();
+    } catch { }
 }
 
-// ================= RANKING LOCAL =================
+// ================= RANKING =================
 function salvarRanking(nome) {
     const lista = JSON.parse(localStorage.getItem("ranking")) || [];
 
@@ -195,11 +294,13 @@ function resetarJogo() {
     vida = VIDA_INICIAL;
     pontos = 0;
     podeDash = true;
+    invencivel = false;
+    velocidadeExtra = 0;
     playerPos = { x: 0, y: 0 };
     enemyPos = { x: 5, y: 5 };
     atualizarHUD();
     iniciarInimigo();
-    desenharTudo();
+    criarArena();
 }
 
 // ================= CONTROLES =================
@@ -215,8 +316,8 @@ document.addEventListener("keydown", e => {
 
     if (e.shiftKey) usarDash(dx, dy);
     else {
-        playerPos.x += dx;
-        playerPos.y += dy;
+        playerPos.x += dx + dx * velocidadeExtra;
+        playerPos.y += dy + dy * velocidadeExtra;
     }
 
     playerPos.x = Math.max(0, Math.min(TAMANHO_ARENA - 1, playerPos.x));
@@ -226,6 +327,7 @@ document.addEventListener("keydown", e => {
         pontos++;
         desenharTudo();
         checarColisao();
+        checarPowerUp();
         atualizarHUD();
     }
 
@@ -235,11 +337,9 @@ document.addEventListener("keydown", e => {
 });
 
 // ================= START =================
-criarArena();
+resetarJogo();
 renderizarRanking();
-iniciarInimigo();
-
 mostrarPopup(
-    "PIXEL ARENA🎮", 
-    "Setas: mover\n Shift: dash\n Esc: pause\n Boa sorte!"
+    "PIXEL ARENA🎮",
+    "Setas: mover\nShift: dash\nEsc: pause\nBoa sorte!"
 );

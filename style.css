@@ -105,6 +105,7 @@ body {
 .ranking li span {
     opacity: 0.7;
 }
+
 /* Ranking interno */
 .ranking li {
     display: grid;
@@ -127,12 +128,35 @@ body {
 }
 
 
-
-
 /* Power-up */
 .powerup {
+    box-shadow: 0 0 8px #fff;
+}
+
+/* Tipos de power-up */
+.powerup.cura {
+    background: #ff4d4d;
+    box-shadow: 0 0 10px #ff4d4d;
+}
+
+.powerup.pontos {
     background: #ffd700;
-    box-shadow: 0 0 8px #ffd700;
+    box-shadow: 0 0 10px #ffd700;
+}
+
+.powerup.velocidade {
+    background: #00bfff;
+    box-shadow: 0 0 10px #00bfff;
+}
+
+.powerup.invencivel {
+    background: #9b59b6;
+    box-shadow: 0 0 10px #9b59b6;
+}
+
+.powerup.slow {
+    background: #4caf50;
+    box-shadow: 0 0 10px #4caf50;
 }
 
 .dash-status {
@@ -249,6 +273,7 @@ body {
         transform: scale(0.8);
         opacity: 0;
     }
+
     to {
         transform: scale(1);
         opacity: 1;
